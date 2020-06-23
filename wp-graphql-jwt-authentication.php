@@ -174,6 +174,13 @@ if ( ! class_exists( '\WPGraphQL\JWT_Authentication' ) ) :
 				10
 			);
 
+			// Register the "login" passive mutation to all mutations except "login".
+			add_action(
+				'graphql_register_types',
+				[ '\WPGraphQL\JWT_Authentication\Login', 'register_passive_mutation' ],
+				10
+			);
+
 			// Register the "refreshToken" mutation to the Schema.
 			add_filter(
 				'graphql_register_types',

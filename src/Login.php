@@ -54,4 +54,58 @@ class Login {
 			]
 		);
 	}
+
+	public static function register_passive_mutation() {
+		register_graphql_passive_mutation(
+			[
+				'description'         => __( 'Login a user. Request for an authToken and User details in response', 'wp-graphql-jwt-authentication' ),
+				'inputFields'         => [
+					'userLogin' => [
+						'type'        => 'String',
+						'description' => __( 'The username used for login. Typically a unique or email address depending on specific configuration', 'wp-graphql-jwt-authentication' ),
+					],
+					'userPass' => [
+						'type'        => 'String',
+						'description' => __( 'The plain-text password for the user logging in.', 'wp-graphql-jwt-authentication' ),
+					],
+				],
+				'outputFields'        => [
+					'authToken'    => [
+						'type'        => 'String',
+						'description' => __( 'JWT Tokenssssss that can be used in future requests for Authentication', 'wp-graphql-jwt-authentication' ),
+					],
+					'refreshToken' => [
+						'type'        => 'String',
+						'description' => __( 'A JWT token that can be used in future requests to get a refreshed jwtAuthToken. If the refresh token used in a request is revoked or otherwise invalid, a valid Auth token will NOT be issued in the response headers.', 'wp-graphql-jwt-authentication' ),
+					],
+					'user'         => [
+						'type'        => 'User',
+						'description' => __( 'The user that was logged in', 'wp-graphql-jwt-authentication' ),
+					],
+					'loginResponse'  => [
+						'type'        => 'String',
+						'description' => __( 'User login status', 'wp-graphql-jwt-authentication' ),
+					],
+				],
+				'excluded'            => [ 'login' ],
+				'mutateQuietly'       => function( $input, AppContext $context, ResolveInfo $info ) {
+					if ( ! empty( $input['userLogin'] ) && ! empty( trim( $input['userPass'] ) ) ) {
+						try {
+							$payload = Auth::login_and_get_token( sanitize_user( $input['userLogin'] ), trim( $input['userPass'] ) );
+							$payload['loginResponse'] = 'SUCCESS';
+						} catch( \GraphQL\Error\UserError $e ) {
+							$payload = [ 'loginResponse' => $e->getMessage() ];
+						}
+
+						add_filter(
+							'graphql_passive_mutation_payload',
+							function( array $p ) use ( $payload ) {
+								return array_merge( $p, $payload );
+							}
+						);
+					}
+				},
+			]
+		);
+	}
 }
